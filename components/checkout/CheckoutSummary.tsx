@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
@@ -8,11 +9,30 @@ import Image from 'next/image'
 
 export function CheckoutSummary() {
   const { items, getTotalPrice, getTotalItems } = useCartStore()
+  const [mbonePrice, setMbonePrice] = useState<number>(0.25)
   
   const subtotal = getTotalPrice()
   const shipping = subtotal > 50 ? 0 : 9.99
   const tax = subtotal * 0.08 // 8% tax
   const total = subtotal + shipping + tax
+  const mboneTotal = total / mbonePrice
+
+  // Fetch MBONE price on component mount
+  useEffect(() => {
+    fetchMbonePrice()
+  }, [])
+
+  const fetchMbonePrice = async () => {
+    try {
+      const response = await fetch('/api/settings/mbone-price')
+      const data = await response.json()
+      if (response.ok) {
+        setMbonePrice(data.price)
+      }
+    } catch (error) {
+      console.error('Failed to fetch MBONE price:', error)
+    }
+  }
 
   return (
     <Card className="bg-card border-border/50">
@@ -85,6 +105,19 @@ export function CheckoutSummary() {
         <div className="flex justify-between text-lg font-semibold">
           <span className="text-brand-secondary">Total</span>
           <span className="text-brand-secondary">${total.toFixed(2)}</span>
+        </div>
+
+        {/* MBONE Conversion */}
+        <div className="bg-brand-accent/10 p-3 rounded-lg space-y-2">
+          <div className="text-center">
+            <p className="text-sm font-medium text-brand-accent">Pay with MBONE</p>
+            <div className="text-xs text-muted-foreground mt-1">
+              1 MBONE = ${mbonePrice.toFixed(4)} USD
+            </div>
+            <div className="text-lg font-bold text-brand-accent mt-1">
+              {mboneTotal.toFixed(2)} MBONE
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

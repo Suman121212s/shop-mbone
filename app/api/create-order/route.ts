@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-// import { ethers } from 'ethers'
-// import { PAYMENT_PROCESSOR_ADDRESS, PROCESSOR_ABI, usdToMBONE } from '@/lib/web3/config'
+import { generateInvoiceId } from '@/lib/web3/config'
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,6 +17,19 @@ export async function POST(request: NextRequest) {
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Get MBONE price from settings
+    const { data: mboneSetting, error: settingError } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'mbone_price_usd')
+      .single()
+
+    if (settingError || !mboneSetting) {
+      return NextResponse.json({ error: 'MBONE price not configured' }, { status: 500 })
+    }
+
+    const mbonePriceUsd = parseFloat(mboneSetting.value)
 
     // Calculate totals
     let totalUSD = 0
@@ -41,11 +53,13 @@ export async function POST(request: NextRequest) {
         product_id: product.id,
         quantity: item.quantity,
         price_usd: product.final_mrp,
-        price_mbone: product.final_mrp // 1:1 ratio for now
+        price_mbone: product.final_mrp / mbonePriceUsd
       })
     }
 
-    const totalMBONE = BigInt(Math.floor(totalUSD * 1e18)) // Simple 1:1 conversion for now
+    // Calculate MBONE amount using dynamic price
+    const totalMBONEFloat = totalUSD / mbonePriceUsd
+    const totalMBONE = BigInt(Math.floor(totalMBONEFloat * 1e18))
 
     // Create order in database
     const { data: order, error: orderError } = await supabase
@@ -54,7 +68,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         wallet_address: walletAddress,
         total_usd: totalUSD,
-        total_mbone: Number(totalMBONE) / 1e18,
+        total_mbone: totalMBONEFloat,
         status: 'pending'
       })
       .select()
@@ -67,11 +81,15 @@ export async function POST(request: NextRequest) {
 
     // Generate order hash
     const orderHash = `0x${Buffer.from(order.id).toString('hex').padStart(64, '0')}`
+    const invoiceId = generateInvoiceId(order.id)
 
-    // Update order with hash
+    // Update order with hash and invoice ID
     await supabase
       .from('orders')
-      .update({ order_hash: orderHash })
+      .update({ 
+        order_hash: orderHash,
+        invoice_id: invoiceId
+      })
       .eq('id', order.id)
 
     // Create order items
@@ -89,15 +107,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create order items' }, { status: 500 })
     }
 
-    // Create order on blockchain (using admin wallet)
-    // Blockchain integration will be added when contracts are deployed
-    console.log('Order created:', { orderHash, totalMBONE: totalMBONE.toString() })
-
     return NextResponse.json({
       orderId: order.id,
       orderHash,
+      invoiceId,
       totalUSD,
       totalMBONE: totalMBONE.toString(),
+      mbonePriceUsd,
       success: true
     })
 

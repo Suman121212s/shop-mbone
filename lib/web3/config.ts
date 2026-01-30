@@ -17,9 +17,9 @@ export const ERC20_ABI = [
 ] as const
 
 export const PROCESSOR_ABI = [
-  "function payOrder(bytes32 orderId) external",
+  "function payOrder(bytes32 orderId, string invoiceId) external",
   "function createOrder(bytes32 orderId, uint256 amount, address buyer) external",
-  "event OrderPaid(bytes32 indexed orderId, address indexed buyer, uint256 amount)",
+  "event OrderPaid(bytes32 indexed orderId, address indexed buyer, uint256 amount, string invoiceId)",
   "event OrderCreated(bytes32 indexed orderId, uint256 amount, address buyer)"
 ] as const
 
@@ -37,15 +37,18 @@ export const config = createConfig({
   },
 })
 
-// Exchange rate (1 MBONE = $1 for now, can be made dynamic)
-export const MBONE_USD_RATE = 1
-
-// Convert USD to MBONE amount (with 18 decimals)
-export const usdToMBONE = (usdAmount: number): bigint => {
-  return BigInt(Math.floor(usdAmount * MBONE_USD_RATE * 1e18))
+// Convert USD to MBONE amount (with 18 decimals) using dynamic price
+export const usdToMBONE = (usdAmount: number, mbonePriceUsd: number): bigint => {
+  const mboneAmount = usdAmount / mbonePriceUsd
+  return BigInt(Math.floor(mboneAmount * 1e18))
 }
 
 // Convert MBONE to USD
-export const mboneToUSD = (mboneAmount: bigint): number => {
-  return Number(mboneAmount) / 1e18 / MBONE_USD_RATE
+export const mboneToUSD = (mboneAmount: bigint, mbonePriceUsd: number): number => {
+  return (Number(mboneAmount) / 1e18) * mbonePriceUsd
+}
+
+// Generate invoice ID from order ID
+export const generateInvoiceId = (orderId: string): string => {
+  return `ORD-${orderId.slice(0, 8)}`
 }

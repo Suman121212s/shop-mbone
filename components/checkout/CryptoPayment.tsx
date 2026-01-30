@@ -11,19 +11,21 @@ import { Wallet, CircleCheck as CheckCircle2, CircleAlert as AlertCircle, Loader
 import { toast } from 'sonner'
 import { useCartStore } from '@/lib/stores/cartStore'
 import { useAuth } from '@/components/providers/AuthProvider'
-import { MBONE_TOKEN_ADDRESS, PAYMENT_PROCESSOR_ADDRESS, ERC20_ABI, PROCESSOR_ABI, usdToMBONE } from '@/lib/web3/config'
-import { ethers } from 'ethers'
+import { MBONE_TOKEN_ADDRESS, PAYMENT_PROCESSOR_ADDRESS, ERC20_ABI, PROCESSOR_ABI, usdToMBONE, generateInvoiceId } from '@/lib/web3/config'
 
 interface OrderData {
   orderId: string
   orderHash: string
+  invoiceId: string
   totalUSD: number
   totalMBONE: string
+  mbonePriceUsd: number
 }
 
 export function CryptoPayment() {
   const [step, setStep] = useState<'connect' | 'approve' | 'pay' | 'confirming' | 'success' | 'error'>('connect')
   const [orderData, setOrderData] = useState<OrderData | null>(null)
+  const [mbonePrice, setMbonePrice] = useState<number>(0.25)
   const [approvalTxHash, setApprovalTxHash] = useState<string>('')
   const [paymentTxHash, setPaymentTxHash] = useState<string>('')
   const [error, setError] = useState<string>('')
@@ -41,7 +43,24 @@ export function CryptoPayment() {
   const { user } = useAuth()
 
   const totalUSD = getTotalPrice()
-  const totalMBONE = usdToMBONE(totalUSD)
+  const totalMBONE = usdToMBONE(totalUSD, mbonePrice)
+
+  // Fetch MBONE price on component mount
+  useEffect(() => {
+    fetchMbonePrice()
+  }, [])
+
+  const fetchMbonePrice = async () => {
+    try {
+      const response = await fetch('/api/settings/mbone-price')
+      const data = await response.json()
+      if (response.ok) {
+        setMbonePrice(data.price)
+      }
+    } catch (error) {
+      console.error('Failed to fetch MBONE price:', error)
+    }
+  }
 
   // Check if on correct network
   const isCorrectNetwork = chainId === polygon.id
@@ -114,7 +133,7 @@ export function CryptoPayment() {
         address: PAYMENT_PROCESSOR_ADDRESS as `0x${string}`,
         abi: PROCESSOR_ABI,
         functionName: 'payOrder',
-        args: [orderData.orderHash as `0x${string}`]
+        args: [orderData.orderHash as `0x${string}`, orderData.invoiceId]
       })
     } catch (error: any) {
       setError(error.message)
@@ -132,7 +151,8 @@ export function CryptoPayment() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId: orderData.orderId,
-          txHash
+          txHash,
+          invoiceId: orderData.invoiceId
         })
       })
 
@@ -190,6 +210,10 @@ export function CryptoPayment() {
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-muted-foreground">Total Amount:</span>
             <span className="font-semibold">${totalUSD.toFixed(2)} USD</span>
+          </div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm text-muted-foreground">MBONE Price:</span>
+            <span className="font-semibold">${mbonePrice.toFixed(4)} USD</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">MBONE Amount:</span>
@@ -302,6 +326,9 @@ export function CryptoPayment() {
             <div className="text-center space-y-2">
               <Loader2 className="h-8 w-8 animate-spin mx-auto text-brand-accent" />
               <p className="text-sm text-muted-foreground">Confirming payment on blockchain...</p>
+              {orderData && (
+                <p className="text-xs text-brand-accent">Invoice: {orderData.invoiceId}</p>
+              )}
               {paymentTxHash && (
                 <a 
                   href={`https://polygonscan.com/tx/${paymentTxHash}`}
@@ -323,6 +350,9 @@ export function CryptoPayment() {
               <div>
                 <h3 className="font-semibold text-green-700">Payment Successful!</h3>
                 <p className="text-sm text-muted-foreground">Your order has been confirmed</p>
+                {orderData && (
+                  <p className="text-xs text-brand-accent mt-1">Invoice: {orderData.invoiceId}</p>
+                )}
               </div>
               {paymentTxHash && (
                 <a 

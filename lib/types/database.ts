@@ -41,6 +41,7 @@ export interface Order {
   status: 'pending' | 'paid' | 'failed' | 'shipped' | 'cancelled'
   payment_tx_hash: string | null
   order_hash: string | null
+  invoice_id: string | null
   created_at: string
 }
 
@@ -64,5 +65,23 @@ export interface CryptoPayment {
   from_wallet: string | null
   to_contract: string | null
   status: string
+  created_at: string
+}
+
+export interface Setting {
+  id: string
+  key: string
+  value: string
+  updated_at: string
+}
+
+export interface Shipment {
+  id: string
+  order_id: string
+  courier_name: string | null
+  tracking_number: string | null
+  status: 'processing' | 'shipped' | 'in_transit' | 'delivered'
+  shipped_at: string | null
+  delivered_at: string | null
   created_at: string
 }

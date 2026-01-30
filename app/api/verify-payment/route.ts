@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-// import { ethers } from 'ethers'
-// import { PAYMENT_PROCESSOR_ADDRESS, PROCESSOR_ABI } from '@/lib/web3/config'
 
 export async function POST(request: NextRequest) {
   try {
-    const { orderId, txHash } = await request.json()
+    const { orderId, txHash, invoiceId } = await request.json()
     
-    if (!orderId || !txHash) {
+    if (!orderId || !txHash || !invoiceId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
@@ -35,11 +33,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Order already paid' }, { status: 400 })
     }
 
+    // Verify invoice ID matches
+    if (order.invoice_id !== invoiceId) {
+      return NextResponse.json({ error: 'Invoice ID mismatch' }, { status: 400 })
+    }
+
     // Verify transaction on blockchain
-    // For now, we'll simulate verification - replace with real blockchain verification
+    // TODO: Add real blockchain verification here
     console.log('Verifying transaction:', txHash)
     
-    // Simulate successful verification for demo
     // Update order status
     const { error: updateError } = await supabase
       .from('orders')
@@ -64,12 +66,24 @@ export async function POST(request: NextRequest) {
         amount: order.total_mbone,
         tx_hash: txHash,
         from_wallet: order.wallet_address,
-        to_contract: 'demo-contract',
+        to_contract: process.env.PAYMENT_PROCESSOR_ADDRESS || 'demo-contract',
         status: 'confirmed'
       })
 
     if (paymentError) {
       console.error('Payment record error:', paymentError)
+    }
+
+    // Create initial shipment record
+    const { error: shipmentError } = await supabase
+      .from('shipments')
+      .insert({
+        order_id: orderId,
+        status: 'processing'
+      })
+
+    if (shipmentError) {
+      console.error('Shipment creation error:', shipmentError)
     }
 
     return NextResponse.json({

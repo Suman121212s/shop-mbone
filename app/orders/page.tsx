@@ -1,18 +1,19 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Package, Clock, CircleCheck as CheckCircle, Circle as XCircle, Truck } from 'lucide-react'
+import { Package, Clock, CircleCheck as CheckCircle, Circle as XCircle, Truck, ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/components/providers/AuthProvider'
 import { supabase } from '@/lib/supabase/client'
-import { Order, OrderItem } from '@/lib/types/database'
+import { Order, OrderItem, Shipment } from '@/lib/types/database'
 import { OrderCard } from '@/components/orders/OrderCard'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
 interface OrderWithItems extends Order {
   order_items: OrderItem[]
+  shipments: Shipment[]
 }
 
 export default function OrdersPage() {
@@ -33,7 +34,8 @@ export default function OrdersPage() {
       .from('orders')
       .select(`
         *,
-        order_items(*)
+        order_items(*),
+        shipments(*)
       `)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
