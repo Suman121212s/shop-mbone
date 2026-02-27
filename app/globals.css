@@ -99,4 +99,9 @@
   .rotate-y-180 {
     transform: rotateY(180deg);
   }
+
+  .hero-text-invisible {
+    color: transparent;
+    text-shadow: 0 0 0 white;
+  }
 }
