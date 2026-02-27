@@ -65,14 +65,34 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-gradient-to-br from-blue-50 to-purple-50">
         <DialogHeader>
           <DialogTitle className="text-center">
             {isSignUp ? 'Create Account' : 'Welcome Back'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleAuth} className="space-y-4">
+        <div className="space-y-4">
+          <div className="flex gap-2 mb-4">
+            <Button
+              type="button"
+              variant={!isSignUp ? "default" : "outline"}
+              onClick={() => setIsSignUp(false)}
+              className="flex-1"
+            >
+              Sign In
+            </Button>
+            <Button
+              type="button"
+              variant={isSignUp ? "default" : "outline"}
+              onClick={() => setIsSignUp(true)}
+              className="flex-1"
+            >
+              Create Account
+            </Button>
+          </div>
+
+          <form onSubmit={handleAuth} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -98,7 +118,20 @@ export function AuthModal({ open, onOpenChange }: AuthModalProps) {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
           </Button>
-        </form>
+          </form>
+
+          {!isSignUp && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => {/* TODO: Implement forgot password */}}
+                className="text-sm text-brand-accent hover:underline"
+              >
+                Forgot Password?
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">

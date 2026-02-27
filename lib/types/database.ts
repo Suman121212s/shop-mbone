@@ -85,3 +85,44 @@ export interface Shipment {
   delivered_at: string | null
   created_at: string
 }
+
+export interface UserProfile {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+  mobile_no: string
+  address_1: string
+  address_2: string
+  address_3: string
+  address_4: string
+  address_5: string
+  pincode: string
+  city: string
+  state: string
+  country: string
+  flat_building_no: string
+  nearest_location: string
+  wallet_balance: number
+  blockchain_name: string
+  created_at: string
+  updated_at: string
+}
+
+export interface LikedItem {
+  id: string
+  user_id: string
+  product_id: string
+  created_at: string
+  product?: Product
+}
+
+export interface Notification {
+  id: string
+  user_id: string
+  heading: string
+  message: string
+  link: string | null
+  read: boolean
+  created_at: string
+}

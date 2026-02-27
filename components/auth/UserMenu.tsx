@@ -51,9 +51,9 @@ export function UserMenu() {
           <Package className="mr-2 h-4 w-4" />
           My Orders
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push('/profile')}>
+        <DropdownMenuItem onClick={() => router.push('/dashboard')}>
           <User className="mr-2 h-4 w-4" />
-          Profile
+          Dashboard
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>
