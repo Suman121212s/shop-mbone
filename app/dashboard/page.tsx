@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, MapPin, CreditCard, Heart, Bell, Package, History, ShoppingCart, Wallet, Edit, Save, X } from 'lucide-react'
+import { User, MapPin, CreditCard, Heart, Bell, Package, History, ShoppingCart, Wallet, CreditCard as Edit, Save, X } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
